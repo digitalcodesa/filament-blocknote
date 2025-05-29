@@ -27,7 +27,7 @@ class FilamentBlocknoteServiceProvider extends PackageServiceProvider
         // Asset Registration
         FilamentAsset::register(
             $this->getAssets(),
-            'digitalcode/filament-blocknote'
+            'digitalcodesa/filament-blocknote'
         );
     }
 
