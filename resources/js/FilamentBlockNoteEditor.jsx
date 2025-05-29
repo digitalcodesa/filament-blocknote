@@ -1,27 +1,30 @@
-import React from "react"; // Ensure React is in scope if not already global
-import { BlockNoteEditor } from "@blocknote/core"; // Import the core editor
-import { useCreateBlockNote, FormattingToolbar } from "@blocknote/react"; // Still useful for some setups
-import { BlockNoteView } from "@blocknote/mantine"; // Using Mantine version
-import "@blocknote/mantine/style.css";
-// You might also need to import specific Mantine components if you build more complex UI
+import React from "react"; // Make sure React is imported
+import {
+  BlockNoteEditor, // Import from @blocknote/core
+  defaultBlockSpecs, // Import defaultBlockSpecs directly if available, or access via BlockNoteEditor.defaultBlockSpecs
+} from "@blocknote/core";
+import { useCreateBlockNote, FormattingToolbar } from "@blocknote/react";
+import { BlockNoteView } from "@blocknote/mantine";
+import "@blocknote/mantine/style.css"; // Essential for Mantine version
 
-// Helper: Your RTL button React component
+// Custom RTL Button React Component
 const RtlButton = (props) => {
+  // Expects editor to be passed in props by FormattingToolbar
   const { editor } = props;
 
   const toggleRtl = () => {
-    const currentBlocks =
+    const currentSelectedBlocks =
       editor.getSelection()?.blocks || editor.getSelectedBlocks() || [];
     const targetBlocks =
-      currentBlocks.length > 0
-        ? currentBlocks
+      currentSelectedBlocks.length > 0
+        ? currentSelectedBlocks
         : editor.getTextCursorPosition().block
         ? [editor.getTextCursorPosition().block]
         : [];
 
     targetBlocks.forEach((block) => {
       const newDirection = block.props.direction === "rtl" ? "ltr" : "rtl";
-      const newTextAlign = newDirection === "rtl" ? "right" : "left"; // Or keep existing alignment
+      const newTextAlign = newDirection === "rtl" ? "right" : "left";
       editor.updateBlock(block, {
         props: {
           ...block.props,
@@ -33,11 +36,11 @@ const RtlButton = (props) => {
   };
 
   const isActive = () => {
-    const currentBlocks =
+    const currentSelectedBlocks =
       editor.getSelection()?.blocks || editor.getSelectedBlocks() || [];
     const targetBlocks =
-      currentBlocks.length > 0
-        ? currentBlocks
+      currentSelectedBlocks.length > 0
+        ? currentSelectedBlocks
         : editor.getTextCursorPosition().block
         ? [editor.getTextCursorPosition().block]
         : [];
@@ -47,9 +50,6 @@ const RtlButton = (props) => {
     );
   };
 
-  // You'll need an actual RTL icon component or SVG string here
-  // For Mantine, you might use an Icon component from a library like Tabler Icons
-  // <IconTextDirectionRtl size={16} />
   const rtlIconSVG = (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -63,14 +63,46 @@ const RtlButton = (props) => {
   );
 
   return (
-    <FormattingToolbar.Button
+    <FormattingToolbar.Button // Use Mantine's Toolbar Button
       onClick={toggleRtl}
-      active={isActive()}
+      // active={isActive()} // `active` prop might need a state if the button should visually change
       mainTooltip="Toggle RTL/LTR"
     >
       {rtlIconSVG}
     </FormattingToolbar.Button>
   );
+};
+
+// Define your custom block schema using the imported defaultBlockSpecs
+const customBlockSchemaWithRTL = {
+  ...defaultBlockSpecs, // Spread the defaults
+  paragraph: {
+    ...defaultBlockSpecs.paragraph, // Spread default paragraph
+    props: {
+      ...defaultBlockSpecs.paragraph.props, // Spread default paragraph props
+      direction: { default: "ltr" },
+      // textAlignment is already a default prop
+    },
+    toDOM: (block) => {
+      // Ensure correct `block` parameter name
+      const { dom, contentDOM } = defaultBlockSpecs.paragraph.toDOM(block); // Use `block`
+      if (block.props.direction === "rtl") {
+        dom.setAttribute("dir", "rtl");
+      } else {
+        dom.removeAttribute("dir");
+      }
+      return { dom, contentDOM };
+    },
+  },
+  // You would extend 'heading' and other text-based blocks similarly for RTL
+  // heading: {
+  //     ...defaultBlockSpecs.heading,
+  //     props: {
+  //         ...defaultBlockSpecs.heading.props,
+  //         direction: { default: "ltr" },
+  //     },
+  //     toDOM: (block) => { /* ... similar to paragraph ... */ }
+  // },
 };
 
 export default function FilamentBlockNoteEditor({
@@ -79,148 +111,134 @@ export default function FilamentBlockNoteEditor({
   statePath,
   uploadActionName,
 }) {
-  // statePath and uploadActionName would need to be passed down if you use callFormComponentAction
-  // For that, editor.blade.php and main.jsx would also need to pass these props.
+  // statePath and uploadActionName are passed down from main.jsx (Alpine component)
 
   const editor = useCreateBlockNote({
     initialContent: value ? JSON.parse(value) : undefined,
-    trailingBlock: false, // Keep as per original package
+    trailingBlock: false, // As per original package
     uploadFile: async (file) => {
-      // This assumes `window.Livewire` is available and the component hosting the form is accessible
-      // and that your Filament PHP field (BlocknoteEditor.php) has the 'handleFileUpload' action.
-      // The statePath passed to the Alpine component is crucial here.
-      console.log(
-        "[FilamentBlockNoteEditor] Uploading file for statePath:",
-        statePath
-      );
-
-      if (!window.Livewire?.find) {
-        console.error(
-          "Livewire component find method not available for upload."
-        );
-        throw new Error("Livewire not available.");
+      // Ensure $wire is robustly found. This part is tricky because $wire is Alpine/Livewire context.
+      // This implementation assumes the Alpine component is on a Livewire component's root or a child.
+      let livewireComponent = null;
+      if (window.Alpine && window.Alpine.$wire) {
+        // If Alpine has a global $wire
+        livewireComponent = window.Alpine.$wire;
+      } else if (
+        window.Livewire &&
+        typeof window.Livewire.find === "function"
+      ) {
+        // Attempt to find the closest Livewire component ID if not global
+        // This might need adjustment based on your actual DOM structure
+        const anyLivewireElement = document.querySelector("[wire\\:id]");
+        if (anyLivewireElement) {
+          const livewireComponentId =
+            anyLivewireElement.getAttribute("wire:id");
+          livewireComponent = window.Livewire.find(livewireComponentId);
+        }
       }
 
-      // Find the Livewire component instance that owns this form field.
-      // This is tricky as we don't have $wire directly here.
-      // We might need to get the Livewire component ID from a DOM element.
-      // For now, let's assume a global Livewire event or a more direct call if possible.
-      // A common pattern is to emit an event that the parent Livewire component listens to,
-      // which then calls the $wire.upload. This is complex to set up from here directly.
-
-      // **Alternative if direct Livewire calls are hard from React context:**
-      // The package uses Filament's HasFileAttachments.
-      // We need to ensure the file upload triggers Filament's machinery.
-      // The original package doesn't implement `uploadFile` in its JS,
-      // so it relies on BlockNote's default (which is no upload) or
-      // expects users to extend/configure it.
-
-      // To integrate with your PHP action 'handleFileUpload' on `BlocknoteEditor.php`
-      // (which uses getFormComponentFileAttachment):
-      const livewireComponentId = document
-        .querySelector("[wire\\:id]")
-        .getAttribute("wire:id"); // Get first Livewire ID on page
-      if (!livewireComponentId) {
-        console.error("Could not find Livewire component ID on the page.");
-        throw new Error("Livewire component ID not found.");
-      }
-      const livewireComponent = window.Livewire.find(livewireComponentId);
       if (!livewireComponent) {
-        console.error("Could not find Livewire component instance.");
-        throw new Error("Livewire component instance not found.");
+        console.error(
+          "[BlockNote React] $wire (Livewire component instance) not found for file upload."
+        );
+        throw new Error("Livewire component instance not found for upload.");
       }
+
+      const livewireTempUploadPath = `componentFileAttachments.${statePath}`;
+      console.log(
+        `[BlockNote React] Starting Livewire file upload for property: ${livewireTempUploadPath}`
+      );
 
       return new Promise((resolve, reject) => {
         livewireComponent.upload(
-          `componentFileAttachments.${statePath}`, // Path for temp upload
+          livewireTempUploadPath,
           file,
           (uploadedFilename) => {
-            console.log("Livewire temp upload success:", uploadedFilename);
+            console.log(
+              "[BlockNote React] Livewire temp upload success:",
+              uploadedFilename
+            );
+            console.log(
+              `[BlockNote React] Calling FormComponentAction: ${uploadActionName} for statePath: ${statePath}`
+            );
             livewireComponent
-              .callFormComponentAction(statePath, "handleFileUpload") // Call PHP action
+              .callFormComponentAction(statePath, uploadActionName) // This is Filament's JS helper
               .then((finalUrl) => {
                 if (finalUrl && typeof finalUrl === "string") {
-                  console.log("PHP Action success, final URL:", finalUrl);
+                  console.log(
+                    "[BlockNote React] Action success, final URL:",
+                    finalUrl
+                  );
                   resolve(finalUrl);
                 } else {
-                  reject("URL not returned from server.");
+                  console.error(
+                    "[BlockNote React] Action did not return a valid URL:",
+                    finalUrl
+                  );
+                  reject("URL not returned from server for file upload.");
                 }
               })
-              .catch((error) => reject(error));
+              .catch((error) => {
+                console.error(
+                  "[BlockNote React] callFormComponentAction for file upload failed:",
+                  error
+                );
+                reject(
+                  error instanceof Error
+                    ? error
+                    : new Error(JSON.stringify(error))
+                );
+              });
           },
-          (error) => reject(new Error("File upload to Livewire failed.")),
+          (error) => {
+            console.error(
+              "[BlockNote React] Livewire file upload direct error:",
+              error
+            );
+            reject(
+              new Error("File upload to Livewire temporary storage failed.")
+            );
+          },
           (event) => {
-            /* console.log('Upload progress:', event.detail.progress); */
+            // console.log(`[BlockNote React] Upload progress: ${event.detail.progress}%`);
           }
         );
       });
     },
-    // Schema customization for RTL
-    blockSchema: {
-      ...BlockNoteEditor.defaultBlockSpecs, // Start with default blocks
-      paragraph: {
-        // Extend paragraph
-        ...BlockNoteEditor.defaultBlockSpecs.paragraph,
-        props: {
-          ...BlockNoteEditor.defaultBlockSpecs.paragraph.props,
-          direction: { default: "ltr" },
-          // textAlignment is already a default prop
-        },
-        // This tells BlockNote how to render `direction` to HTML
-        toDOM: (block) => {
-          const { dom, contentDOM } =
-            BlockNoteNoteEditor.defaultBlockSpecs.paragraph.toDOM(block);
-          if (block.props.direction === "rtl") {
-            dom.setAttribute("dir", "rtl");
-            // Optionally, add data-direction for easier CSS targeting if needed
-            // dom.setAttribute("data-direction", "rtl");
-          } else {
-            dom.removeAttribute("dir");
-            // dom.removeAttribute("data-direction");
-          }
-          return { dom, contentDOM };
-        },
-      },
-      // You would extend 'heading' and other text blocks similarly
-      // heading: { ... similar extension ... },
-    },
+    blockSchema: customBlockSchemaWithRTL, // Use your customized schema
   });
 
-  // If editor is null, BlockNoteView will throw an error.
   if (!editor) {
-    return <div>Loading editor...</div>;
+    // This can happen briefly while useCreateBlockNote initializes
+    return <div>Loading BlockNote editor...</div>;
   }
 
   return (
     <BlockNoteView
       editor={editor}
       onChange={() => {
-        // The original onChange likely updates the Alpine component's value,
-        // which then updates Livewire via $wire.entangle.
-        onChange(editor); // Call the original onChange passed from Alpine
+        onChange(editor); // Call the original onChange passed from Alpine to update Livewire
       }}
       formattingToolbar={(
-        props // Custom formatting toolbar
+        toolbarProps // toolbarProps includes the editor instance
       ) => (
         <FormattingToolbar>
-          {/* Default buttons */}
-          <FormattingToolbar.Buttons.Bold {...props} />
-          <FormattingToolbar.Buttons.Italic {...props} />
-          <FormattingToolbar.Buttons.Underline {...props} />
-          <FormattingToolbar.Buttons.Strike {...props} />
-          <FormattingToolbar.Buttons.Code {...props} />
-          {/* Custom RTL button */}
-          <RtlButton editor={props.editor} /> {/* Pass the editor instance */}
-          {/* Add other default or custom buttons as needed */}
-          <FormattingToolbar.Buttons.TextColor {...props} />
-          <FormattingToolbar.Buttons.BackgroundColor {...props} />
-          <FormattingToolbar.Buttons.Link {...props} />
-          {/* <FormattingToolbar.Buttons.Image {...props} /> */}
-          {/* <FormattingToolbar.Buttons.TextAlign {...props} /> */}
+          {/* Default Mantine buttons */}
+          <FormattingToolbar.Buttons.Bold {...toolbarProps} />
+          <FormattingToolbar.Buttons.Italic {...toolbarProps} />
+          <FormattingToolbar.Buttons.Underline {...toolbarProps} />
+          <FormattingToolbar.Buttons.Strike {...toolbarProps} />
+          <FormattingToolbar.Buttons.Code {...toolbarProps} />
+          {/* Your Custom RTL button */}
+          <RtlButton editor={toolbarProps.editor} />{" "}
+          {/* Pass the editor instance */}
+          <FormattingToolbar.Buttons.TextColor {...toolbarProps} />
+          <FormattingToolbar.Buttons.BackgroundColor {...toolbarProps} />
+          <FormattingToolbar.Buttons.Link {...toolbarProps} />
+          {/* Add other desired buttons here */}
         </FormattingToolbar>
       )}
-      // You can also customize other parts like SideMenu, SlashMenu here
-      // by passing your own React components to them.
+      // Other props like sideMenu, slashMenu can be customized similarly if needed
     />
   );
 }
