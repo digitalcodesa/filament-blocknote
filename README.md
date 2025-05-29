@@ -1,9 +1,9 @@
 # A Laravel Filament package to add the BlockNote field to your forms.
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/jubeki/filament-blocknote.svg?style=flat-square)](https://packagist.org/packages/jubeki/filament-blocknote)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/jubeki/filament-blocknote/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/jubeki/filament-blocknote/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/jubeki/filament-blocknote/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/jubeki/filament-blocknote/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/jubeki/filament-blocknote.svg?style=flat-square)](https://packagist.org/packages/jubeki/filament-blocknote)
+[![Latest Version on Packagist](https://img.shields.io/packagist/v/digitalcodesa/filament-blocknote.svg?style=flat-square)](https://packagist.org/packages/digitalcodesa/filament-blocknote)
+[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/digitalcodesa/filament-blocknote/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/digitalcodesa/filament-blocknote/actions?query=workflow%3Arun-tests+branch%3Amain)
+[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/digitalcodesa/filament-blocknote/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/digitalcodesa/filament-blocknote/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
+[![Total Downloads](https://img.shields.io/packagist/dt/digitalcodesa/filament-blocknote.svg?style=flat-square)](https://packagist.org/packages/digitalcodesa/filament-blocknote)
 
 
 
@@ -14,7 +14,7 @@ This is where your description should go. Limit it to a paragraph or two. Consid
 You can install the package via composer:
 
 ```bash
-composer require jubeki/filament-blocknote
+composer require digitalcodesa/filament-blocknote
 ```
 
 You can publish and run the migrations with:
@@ -46,8 +46,8 @@ return [
 ## Usage
 
 ```php
-$filamentBlocknote = new Jubeki\FilamentBlocknote();
-echo $filamentBlocknote->echoPhrase('Hello, Jubeki!');
+$filamentBlocknote = new digitalcodesa\FilamentBlocknote();
+echo $filamentBlocknote->echoPhrase('Hello, digitalcodesa!');
 ```
 
 ## Testing
@@ -70,7 +70,7 @@ Please review [our security policy](../../security/policy) on how to report secu
 
 ## Credits
 
-- [Julius Kiekbusch](https://github.com/Jubeki)
+- [Julius Kiekbusch](https://github.com/digitalcodesa)
 - [All Contributors](../../contributors)
 
 ## License

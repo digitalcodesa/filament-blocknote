@@ -1,21 +1,20 @@
 {
-    "name": "jubeki/filament-blocknote",
+    "name": "digitalcodesa/filament-blocknote",
     "description": "A Laravel Filament package to add the BlockNote field to your forms.",
     "keywords": [
-        "Jubeki",
         "laravel",
         "filament-blocknote"
     ],
-    "homepage": "https://github.com/jubeki/filament-blocknote",
+    "homepage": "https://github.com/digitalcodesa/filament-blocknote",
     "support": {
-        "issues": "https://github.com/jubeki/filament-blocknote/issues",
-        "source": "https://github.com/jubeki/filament-blocknote"
+        "issues": "https://github.com/digitalcodesa/filament-blocknote/issues",
+        "source": "https://github.com/digitalcodesa/filament-blocknote"
     },
     "license": "MIT",
     "authors": [
         {
-            "name": "Julius Kiekbusch",
-            "email": "contact@julius-kiekbusch.de",
+            "name": "Abdo Sh",
+            "email": "info@digitalcode.sa",
             "role": "Developer"
         }
     ],
@@ -30,7 +29,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Jubeki\\FilamentBlocknote\\": "src/"
+            "Digitalcode\\FilamentBlocknote\\": "src/"
         }
     },
     "config": {
@@ -43,7 +42,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "Jubeki\\FilamentBlocknote\\FilamentBlocknoteServiceProvider"
+                "Digitalcode\\FilamentBlocknote\\FilamentBlocknoteServiceProvider"
             ]
         }
     },

@@ -1,6 +1,6 @@
 <?php
 
-namespace Jubeki\FilamentBlocknote;
+namespace Digitalcode\FilamentBlocknote;
 
 use Filament\Support\Assets\Asset;
 use Filament\Support\Assets\Css;
@@ -27,7 +27,7 @@ class FilamentBlocknoteServiceProvider extends PackageServiceProvider
         // Asset Registration
         FilamentAsset::register(
             $this->getAssets(),
-            'jubeki/filament-blocknote'
+            'digitalcode/filament-blocknote'
         );
     }
 
