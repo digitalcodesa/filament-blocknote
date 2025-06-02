@@ -17,7 +17,10 @@ class FilamentBlocknoteServiceProvider extends PackageServiceProvider
 
     public function configurePackage(Package $package): void
     {
-        $package->name(static::$name)->hasViews(static::$viewNamespace);
+        $package
+            ->name(static::$name)
+            ->hasViews(static::$viewNamespace)
+            ->publishesServiceProvider('HasBlocknoteFileUploads'); // Add this to publish the trait
     }
 
     public function packageRegistered(): void {}
@@ -29,6 +32,8 @@ class FilamentBlocknoteServiceProvider extends PackageServiceProvider
             $this->getAssets(),
             'digitalcodesa/filament-blocknote'
         );
+
+        // No need to register Livewire component - we're using actions instead
     }
 
     /**
@@ -36,7 +41,17 @@ class FilamentBlocknoteServiceProvider extends PackageServiceProvider
      */
     protected function getAssets(): array
     {
-        $manifest = json_decode(file_get_contents(__DIR__.'/../resources/dist/manifest.json'), true);
+        $manifestPath = __DIR__.'/../resources/dist/manifest.json';
+        
+        if (!file_exists($manifestPath)) {
+            return [];
+        }
+        
+        $manifest = json_decode(file_get_contents($manifestPath), true);
+
+        if (!$manifest) {
+            return [];
+        }
 
         return [
             Css::make(
