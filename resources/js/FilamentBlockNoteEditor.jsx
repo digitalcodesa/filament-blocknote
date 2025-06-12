@@ -1,4 +1,4 @@
-// Fixed FilamentBlockNoteEditor.jsx
+// FilamentBlockNoteEditor.jsx with Optimized RTL Support
 console.log("[BlockNote React] Initializing Filament BlockNote Editor with RTL support");
 
 import React from "react";
@@ -22,8 +22,8 @@ import {
 import { BlockNoteView } from "@blocknote/mantine";
 import "@blocknote/mantine/style.css";
 
-// Custom RTL Button using the correct BlockNote pattern
-const RtlButton = () => {
+// Custom RTL/LTR Buttons
+const DirectionButtons = () => {
   const editor = useBlockNoteEditor();
   const Components = useComponentsContext();
 
@@ -31,7 +31,24 @@ const RtlButton = () => {
     return null;
   }
 
-  const handleRtlClick = () => {
+  const applyDirection = (blockId, alignment) => {
+    // Only apply direction to the specific block that changed
+    requestAnimationFrame(() => {
+      const blockElement = document.querySelector(`[data-id="${blockId}"]`);
+      if (blockElement) {
+        const contentElements = blockElement.querySelectorAll('.bn-inline-content');
+        const direction = alignment === 'right' ? 'rtl' : 'ltr';
+        
+        contentElements.forEach(el => {
+          el.setAttribute('dir', direction);
+          el.style.direction = direction;
+          el.style.unicodeBidi = direction === 'rtl' ? 'embed' : 'normal';
+        });
+      }
+    });
+  };
+
+  const handleDirectionChange = (direction) => {
     try {
       const currentBlock = editor.getTextCursorPosition()?.block;
       
@@ -39,74 +56,46 @@ const RtlButton = () => {
         return;
       }
 
-      editor.updateBlock(currentBlock, {
-        props: {
-          ...currentBlock.props,
-          direction: "rtl",
-          textAlignment: "right",
-        },
-      });
-    } catch (error) {
-      console.error("[RTL Button] Error updating block to RTL:", error);
-    }
-  };
-
-  const handleLtrClick = () => {
-    try {
-      const currentBlock = editor.getTextCursorPosition()?.block;
+      const alignment = direction === "rtl" ? "right" : "left";
       
-      if (!currentBlock) {
-        return;
-      }
-
+      // Update block alignment
       editor.updateBlock(currentBlock, {
         props: {
           ...currentBlock.props,
-          direction: "ltr",
-          textAlignment: "left",
+          textAlignment: alignment,
         },
       });
+
+      // Apply direction immediately to this specific block
+      applyDirection(currentBlock.id, alignment);
+
     } catch (error) {
-      console.error("[LTR Button] Error updating block to LTR:", error);
+      console.error(`[Direction Button] Error:`, error);
     }
   };
 
-  const isRtlActive = () => {
-    if (!editor) return false;
+  const getDirection = () => {
     try {
       const currentBlock = editor.getTextCursorPosition()?.block;
-      return currentBlock?.props?.direction === "rtl";
+      if (!currentBlock) return "ltr";
+      
+      return currentBlock.props?.textAlignment === 'right' ? 'rtl' : 'ltr';
     } catch (error) {
-      return false;
+      return "ltr";
     }
   };
 
-  const isLtrActive = () => {
-    if (!editor) return false;
-    try {
-      const currentBlock = editor.getTextCursorPosition()?.block;
-      const direction = currentBlock?.props?.direction || "ltr";
-      return direction === "ltr";
-    } catch (error) {
-      return true; // Default to LTR
-    }
-  };
+  const currentDirection = getDirection();
 
   return (
     <>
       <Components.FormattingToolbar.Button
         label="LTR"
         mainTooltip="Left to Right"
-        isSelected={isLtrActive()}
-        onClick={handleLtrClick}
+        isSelected={currentDirection === "ltr"}
+        onClick={() => handleDirectionChange("ltr")}
         icon={
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="currentColor"
-          >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
             <path d="M9 10v5h2V4h2v11h2V4h2V2H9C6.79 2 5 3.79 5 6s1.79 4 4 4zm12 8l-4-4v3H5v2h12v3l4-4z" />
           </svg>
         }
@@ -114,17 +103,11 @@ const RtlButton = () => {
       <Components.FormattingToolbar.Button
         label="RTL"
         mainTooltip="Right to Left"
-        isSelected={isRtlActive()}
-        onClick={handleRtlClick}
+        isSelected={currentDirection === "rtl"}
+        onClick={() => handleDirectionChange("rtl")}
         icon={
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            width="18"
-            height="18"
-            fill="currentColor"
-          >
-            <path d="M10 4v7h3V4h2v14h-2v-5h-3v5H8V4zm9 0h-2v14h2zM6 12l-4 4l4 4v-3h12v-2H6z" />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M10 10v5h2V4h2v11h2V4h2V2h-8c-2.21 0-4 1.79-4 4s1.79 4 4 4zM8 17v-3l-4 4 4 4v-3h12v-2H8z" />
           </svg>
         }
       />
@@ -132,56 +115,13 @@ const RtlButton = () => {
   );
 };
 
-// Define your custom block schema
-const customBlockSchemaWithRTL = {
-  ...defaultBlockSpecs,
-  paragraph: {
-    ...defaultBlockSpecs.paragraph,
-    props: {
-      ...defaultBlockSpecs.paragraph.props,
-      direction: { default: "ltr" },
-    },
-    toDOM: (block) => {
-      const { dom, contentDOM } = defaultBlockSpecs.paragraph.toDOM(block);
-      if (block.props?.direction === "rtl") {
-        dom.setAttribute("dir", "rtl");
-        dom.style.textAlign = "right";
-      } else {
-        dom.removeAttribute("dir");
-        dom.style.textAlign = "left";
-      }
-      return { dom, contentDOM };
-    },
-  },
-  heading: {
-    ...defaultBlockSpecs.heading,
-    props: {
-      ...defaultBlockSpecs.heading.props,
-      direction: { default: "ltr" },
-    },
-    toDOM: (block) => {
-      const { dom, contentDOM } = defaultBlockSpecs.heading.toDOM(block);
-      if (block.props?.direction === "rtl") {
-        dom.setAttribute("dir", "rtl");
-        dom.style.textAlign = "right";
-      } else {
-        dom.removeAttribute("dir");
-        dom.style.textAlign = "left";
-      }
-      return { dom, contentDOM };
-    },
-  },
-};
-
 export default function FilamentBlockNoteEditor({
   value,
   onChange,
   statePath,
-  uploadActionName = 'handleFileUpload', // Set default value
+  uploadActionName = 'handleFileUpload',
   livewire,
 }) {
-  console.log("[BlockNote React] Component props:", { value, statePath, uploadActionName });
-
   const editor = useCreateBlockNote({
     initialContent: value ? JSON.parse(value) : undefined,
     trailingBlock: false,
@@ -193,39 +133,30 @@ export default function FilamentBlockNoteEditor({
         throw new Error("Livewire instance not available");
       }
 
-      // The livewire parameter is actually the Alpine component function
-      // We need to get the actual Livewire component from the DOM
       let actualLivewireComponent = null;
       
       try {
-        // Try to find the Livewire component in the DOM
         const editorElement = document.querySelector('[x-data*="blocknoteEditor"]');
         if (editorElement && editorElement._x_dataStack) {
-          // Get Alpine data
           const alpineData = editorElement._x_dataStack[0];
           if (alpineData && alpineData.$wire) {
             actualLivewireComponent = alpineData.$wire;
           }
         }
         
-        // If still not found, try window.Livewire
         if (!actualLivewireComponent && window.Livewire) {
           actualLivewireComponent = window.Livewire.first();
         }
         
-        // If still not found, try the original livewire parameter
         if (!actualLivewireComponent) {
           actualLivewireComponent = livewire;
         }
-        
-        console.log("[BlockNote React] Found Livewire component:", actualLivewireComponent);
       } catch (error) {
         console.error("[BlockNote React] Error finding Livewire component:", error);
         actualLivewireComponent = livewire;
       }
 
       const livewireTempUploadPath = `componentFileAttachments.${statePath}`;
-      console.log(`[BlockNote React] Using upload path: ${livewireTempUploadPath}`);
 
       return new Promise((resolve, reject) => {
         actualLivewireComponent.upload(
@@ -234,11 +165,7 @@ export default function FilamentBlockNoteEditor({
           (uploadedFilename) => {
             console.log("[BlockNote React] Temp upload success:", uploadedFilename);
             
-            // Now try to call the action
             try {
-              console.log("[BlockNote React] Calling file upload action");
-              
-              // Try different Filament action calling methods, starting with the most likely to work
               const actionMethods = [
                 () => actualLivewireComponent.call('handleFileUpload', uploadedFilename, statePath),
                 () => actualLivewireComponent.call('handleFileUpload', uploadedFilename),
@@ -251,49 +178,33 @@ export default function FilamentBlockNoteEditor({
               
               function tryNextMethod() {
                 if (methodIndex >= actionMethods.length) {
-                  // All methods failed, create dummy URL
-                  console.log("[BlockNote React] All methods failed, creating dummy URL for testing");
                   const dummyUrl = `/storage/editor-uploads/test-${Date.now()}.png`;
                   resolve(dummyUrl);
                   return;
                 }
                 
                 const currentMethod = actionMethods[methodIndex];
-                const methodName = [
-                  'handleFileUpload with statePath',
-                  'handleFileUpload direct',
-                  'direct uploadActionName call',
-                  'callAction',
-                  'callFormComponentAction'
-                ][methodIndex];
-                
-                console.log(`[BlockNote React] Trying method ${methodIndex + 1}/${actionMethods.length}: ${methodName}`);
                 
                 currentMethod()
                   .then(result => {
-                    console.log(`[BlockNote React] Method ${methodName} result:`, result);
                     if (result?.url) {
                       resolve(result.url);
                     } else if (result && typeof result === 'string' && (result.startsWith('/') || result.startsWith('http'))) {
-                      // Sometimes the URL is returned directly as a string
                       resolve(result);
                     } else if (result && Array.isArray(result) && result.length > 0 && result[0].url) {
-                      // Sometimes it's returned as an array
                       resolve(result[0].url);
                     } else {
-                      // Try next method
                       methodIndex++;
                       tryNextMethod();
                     }
                   })
                   .catch(error => {
-                    console.error(`[BlockNote React] Method ${methodName} failed:`, error);
+                    console.error(`[BlockNote React] Method failed:`, error);
                     methodIndex++;
                     tryNextMethod();
                   });
               }
               
-              // Start trying methods
               tryNextMethod();
               
             } catch (error) {
@@ -308,11 +219,80 @@ export default function FilamentBlockNoteEditor({
         );
       });
     },
-    blockSchema: customBlockSchemaWithRTL,
   });
 
+  // Apply direction only on initial load and when explicitly needed
+  React.useEffect(() => {
+    if (!editor) return;
+
+    // Apply direction based on existing content only once on load
+    const applyInitialDirections = () => {
+      editor.forEachBlock((block) => {
+        if (block.props?.textAlignment === 'right') {
+          const blockElement = document.querySelector(`[data-id="${block.id}"]`);
+          if (blockElement) {
+            const contentElements = blockElement.querySelectorAll('.bn-inline-content');
+            contentElements.forEach(el => {
+              el.setAttribute('dir', 'rtl');
+              el.style.direction = 'rtl';
+              el.style.unicodeBidi = 'embed';
+            });
+          }
+        }
+        return true;
+      });
+    };
+
+    // Apply once after a short delay to ensure DOM is ready
+    const timeoutId = setTimeout(applyInitialDirections, 200);
+
+    return () => clearTimeout(timeoutId);
+  }, [editor]);
+
+  // CSS for RTL support
+  React.useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      /* RTL Support - Using CSS selectors instead of JavaScript */
+      
+      /* Apply RTL based on text alignment attribute */
+      [data-text-alignment="right"] .bn-inline-content {
+        direction: rtl !important;
+        unicode-bidi: embed !important;
+      }
+      
+      /* Maintain direction for elements with dir attribute */
+      .bn-inline-content[dir="rtl"] {
+        direction: rtl !important;
+        unicode-bidi: embed !important;
+      }
+      
+      .bn-inline-content[dir="ltr"] {
+        direction: ltr !important;
+        unicode-bidi: normal !important;
+      }
+      
+      /* Visual indicators removed - no borders */
+      
+      /* List support */
+      [data-text-alignment="right"] ul,
+      [data-text-alignment="right"] ol {
+        direction: rtl !important;
+        padding-right: 40px !important;
+        padding-left: 0 !important;
+      }
+      
+      /* Ensure all text content respects alignment */
+      [data-text-alignment="right"] * {
+        text-align: right !important;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => document.head.removeChild(style);
+  }, []);
+
   if (!editor) {
-    console.log("[BlockNote React] Editor not ready yet");
     return <div>Loading BlockNote editor...</div>;
   }
 
@@ -344,7 +324,7 @@ export default function FilamentBlockNoteEditor({
               <NestBlockButton key={"nestBlockButton"} />
               <UnnestBlockButton key={"unnestBlockButton"} />
               <CreateLinkButton key={"createLinkButton"} />
-              <RtlButton key={"rtlLtrButtons"} />
+              <DirectionButtons key={"directionButtons"} />
             </FormattingToolbar>
           );
         }}
